@@ -1,0 +1,12 @@
+<h1>{{ .Article.Title }}</h1>
+
+<p>{{ printf "%s" .Article.Body }}</p>
+<p>tags: {{ .Article.Tags }}<p>
+<p>Created: {{ .Article.Created_at }}</p>
+<p>Updated: {{ .Article.Updated_at }}</p>
+
+<p><a href="/edit/{{ .Article.Url }}">Edit</a></p>
+
+{{ range $i, $a := .Articles }}
+<p><a href="/{{ $a.Url }}">{{ $a.Title }}</a></p>
+{{ end }}

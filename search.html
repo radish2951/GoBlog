@@ -1,0 +1,3 @@
+{{ range $i, $a := .Articles }}
+<p><a href="/{{ $a.Url }}">{{ $a.Title }}</a></p>
+{{ end }}
