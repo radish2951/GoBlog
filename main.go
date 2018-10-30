@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -16,16 +17,17 @@ var articles []article
 type Data struct {
 	Article  *article
 	Articles *[]article
-	Tags []string
+	Tags string
 }
 
 type article struct {
 	Id                     int
-	Title, Body, Tags, Url string
+	Title, Body, Url string
+	Tags []string
 	Created_at, Updated_at time.Time
 }
 
-func createArticle(title, body, tags, url string, created_at, updated_at time.Time) article {
+func createArticle(title, body, url string, tags []string, created_at, updated_at time.Time) article {
 	return article{
 		Title:      title,
 		Body:       body,
@@ -46,7 +48,7 @@ func (a *article) save() error {
 }
 
 func (a *article) insert() error {
-	_, err := db.Exec("INSERT INTO articles (title, body, tags, url) VALUES (?, ?, ?, ?)", a.Title, a.Body, a.Tags, a.Url)
+	_, err := db.Exec("INSERT INTO articles (title, body, tags, url) VALUES (?, ?, ?, ?)", a.Title, a.Body, strings.Join(a.Tags, ","), a.Url)
 	if err != nil {
 		return err
 	}
@@ -54,7 +56,7 @@ func (a *article) insert() error {
 }
 
 func (a *article) update() error {
-	_, err := db.Exec("UPDATE articles SET title = ?, body = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE url = ?", a.Title, a.Body, a.Tags, a.Url)
+	_, err := db.Exec("UPDATE articles SET title = ?, body = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE url = ?", a.Title, a.Body, strings.Join(a.Tags, ","), a.Url)
 	if err != nil {
 		return err
 	}
@@ -64,9 +66,11 @@ func (a *article) update() error {
 func findArticleByUrl(url string) (article, error) {
 	row := db.QueryRow("SELECT * FROM articles WHERE url = ?", url)
 	a := article{}
-	if err := row.Scan(&a.Id, &a.Title, &a.Body, &a.Tags, &a.Url, &a.Created_at, &a.Updated_at); err != nil {
+	var tags string
+	if err := row.Scan(&a.Id, &a.Title, &a.Body, &tags, &a.Url, &a.Created_at, &a.Updated_at); err != nil {
 		return article{}, err
 	}
+	a.Tags = strings.Split(tags, ",")
 	return a, nil
 }
 
@@ -79,10 +83,12 @@ func findArticlesByTag(tag string) ([]article, error) {
 	if err != nil {
 		return []article{}, err
 	}
+	var tags string
 	for rows.Next() {
-		if err := rows.Scan(&a.Id, &a.Title, &a.Body, &a.Tags, &a.Url, &a.Created_at, &a.Updated_at); err != nil {
+		if err := rows.Scan(&a.Id, &a.Title, &a.Body, &tags, &a.Url, &a.Created_at, &a.Updated_at); err != nil {
 			return []article{}, err
 		}
+		a.Tags = strings.Split(tags, ",")
 		articles = append(articles, a)
 	}
 	if err := rows.Err(); err != nil {
@@ -95,10 +101,10 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[1:]
 	a, err := findArticleByUrl(url)
 	if err != nil {
-		http.Error(w, "Not found", http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	d := Data{Article: &a, Articles: &articles, Tags: strings.Split(a.Tags, ",")}
+	d := Data{Article: &a, Articles: &articles}
 	t, _ := template.ParseFiles("view.html")
 	t.Execute(w, &d)
 }
@@ -111,22 +117,21 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	t, _ := template.ParseFiles("edit.html")
-	t.Execute(w, &a)
+	d := Data{Article: &a, Tags: strings.Join(a.Tags, ",")}
+	t.Execute(w, &d)
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[len("/save/"):]
-	a, err := findArticleByUrl(url)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+
+	a := article{
+		Title: r.FormValue("title"),
+		Body: r.FormValue("body"),
+		Url: url,
+		Tags: strings.Split(r.FormValue("tags"), ","),
 	}
 
-	a.Title = r.FormValue("title")
-	a.Body = r.FormValue("body")
-	a.Tags = r.FormValue("tags")
-
-	if err = a.save(); err != nil {
+	if err := a.save(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -146,6 +151,16 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("search.html")
 	t.Execute(w, &d)
 
+}
+
+func newHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.URL.Path = "/save/" + r.FormValue("url")
+		saveHandler(w, r)
+		return
+	}
+	t, _ := template.ParseFiles("new.html")
+	t.Execute(w, &article{})
 }
 
 func reloadAllArticles() {
@@ -176,6 +191,7 @@ func main() {
 	http.HandleFunc("/edit/", editHandler)
 	http.HandleFunc("/save/", saveHandler)
 	http.HandleFunc("/search/", searchHandler)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	http.HandleFunc("/new", newHandler)
 
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }

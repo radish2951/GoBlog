@@ -1,9 +1,14 @@
 <h1>{{ .Article.Title }}</h1>
 
 <p>{{ printf "%s" .Article.Body }}</p>
-<p>tags: {{ .Article.Tags }}<p>
 <p>Created: {{ .Article.Created_at }}</p>
 <p>Updated: {{ .Article.Updated_at }}</p>
+
+<p>
+{{ range $i, $t := .Article.Tags }}
+<a href="/search/{{ $t }}">{{ $t }}</a> 
+{{ end }}
+</p>
 
 <p><a href="/edit/{{ .Article.Url }}">Edit</a></p>
 

@@ -1,8 +1,8 @@
-<h1><{{ .Title }}</h1>
+<h1><{{ .Article.Title }}</h1>
 
-<form action="/save/{{.Url}}" method="POST">
-<div><input name="title" value="{{ .Title }}"></input></div>
-<div><textarea name="body">{{printf "%s" .Body}}</textarea></div>
-<div><input name="tags" value="{{printf "%s" .Tags}}"></input></div>
+<form action="/save/{{ .Article.Url }}" method="POST">
+<div><input name="title" value="{{ .Article.Title }}"></input></div>
+<div><textarea name="body" cols="100" rows="20">{{ .Article.Body }}</textarea></div>
+<div><input name="tags" value="{{ .Tags }}"></input></div>
 <div><input type="submit" value="Save"></div>
 </form>
