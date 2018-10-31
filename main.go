@@ -28,47 +28,30 @@ type article struct {
 }
 
 func createArticle(title, body, url string, tags []string, created_at, updated_at time.Time) article {
-	return article{
-		Title:      title,
-		Body:       body,
-		Tags:       tags,
-		Url:        url,
-		Created_at: created_at.Local(),
-		Updated_at: updated_at.Local(),
-	}
+	return article{Title: title, Body: body, Tags: tags, Url: url, Created_at: created_at.Local(), Updated_at: updated_at.Local()}
 }
 
 func (a *article) save() error {
-	if err := a.insert(); err != nil {
-		if err := a.update(); err != nil {
-			return err
-		}
+	err := a.insert()
+	if err != nil {
+		err = a.update()
 	}
-	return nil
+	return err
 }
 
 func (a *article) insert() error {
 	_, err := db.Exec("INSERT INTO articles (title, body, tags, url) VALUES (?, ?, ?, ?)", a.Title, a.Body, strings.Join(a.Tags, ","), a.Url)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (a *article) update() error {
 	_, err := db.Exec("UPDATE articles SET title = ?, body = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE url = ?", a.Title, a.Body, strings.Join(a.Tags, ","), a.Url)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (a *article) delete() error {
 	_, err := db.Exec("DELETE FROM articles WHERE url = ?", a.Url)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func findArticleByUrl(url string) (article, error) {
