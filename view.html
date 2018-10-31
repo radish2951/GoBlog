@@ -11,6 +11,8 @@
 </p>
 
 <p><a href="/edit/{{ .Article.Url }}">Edit</a></p>
+<p><a href="/delete/{{ .Article.Url }}">Delete</a></p>
+<p><a href="/new">New</a></p>
 
 {{ range $i, $a := .Articles }}
 <p><a href="/{{ $a.Url }}">{{ $a.Title }}</a></p>

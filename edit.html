@@ -1,4 +1,4 @@
-<h1><{{ .Article.Title }}</h1>
+<h1>{{ .Article.Title }}</h1>
 
 <form action="/save/{{ .Article.Url }}" method="POST">
 <div><input name="title" value="{{ .Article.Title }}"></input></div>

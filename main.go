@@ -63,6 +63,14 @@ func (a *article) update() error {
 	return nil
 }
 
+func (a *article) delete() error {
+	_, err := db.Exec("DELETE FROM articles WHERE url = ?", a.Url)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func findArticleByUrl(url string) (article, error) {
 	row := db.QueryRow("SELECT * FROM articles WHERE url = ?", url)
 	a := article{}
@@ -99,6 +107,10 @@ func findArticlesByTag(tag string) ([]article, error) {
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[1:]
+	if url == "" {
+		listHandler(w, r)
+		return
+	}
 	a, err := findArticleByUrl(url)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -106,6 +118,12 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	d := Data{Article: &a, Articles: &articles}
 	t, _ := template.ParseFiles("view.html")
+	t.Execute(w, &d)
+}
+
+func listHandler(w http.ResponseWriter, r *http.Request) {
+	d := Data{Articles: &articles}
+	t, _ := template.ParseFiles("list.html")
 	t.Execute(w, &d)
 }
 
@@ -163,6 +181,18 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, &article{})
 }
 
+func deleteHandler(w http.ResponseWriter, r *http.Request) {
+	url := r.URL.Path[len("/delete/"):]
+	a, err := findArticleByUrl(url)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.delete()
+	reloadAllArticles()
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
 func reloadAllArticles() {
 	articles, _ = findArticlesByTag("%")
 }
@@ -192,6 +222,7 @@ func main() {
 	http.HandleFunc("/save/", saveHandler)
 	http.HandleFunc("/search/", searchHandler)
 	http.HandleFunc("/new", newHandler)
+	http.HandleFunc("/delete/", deleteHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
