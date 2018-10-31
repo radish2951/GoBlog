@@ -27,10 +27,6 @@ type article struct {
 	Created_at, Updated_at time.Time
 }
 
-func createArticle(title, body, url string, tags []string, created_at, updated_at time.Time) article {
-	return article{Title: title, Body: body, Tags: tags, Url: url, Created_at: created_at.Local(), Updated_at: updated_at.Local()}
-}
-
 func (a *article) save() error {
 	err := a.insert()
 	if err != nil {
@@ -191,12 +187,10 @@ func main() {
 	}
 	defer db.Close()
 
-	/*
-		_, err = db.Exec("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, title TEXT UNIQUE, body TEXT, tags TEXT, url TEXT UNIQUE, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
+		_, err = db.Exec("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, title TEXT UNIQUE, body TEXT, tags TEXT, url TEXT UNIQUE CHECK(url != ''), created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
 		if err != nil {
 			log.Fatal(err)
 		}
-	*/
 
 	reloadAllArticles()
 
