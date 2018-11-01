@@ -30,31 +30,29 @@ type article struct {
 
 func (a *article) save() (err error) {
 	if err = a.insert(); err != nil {
-		log.Println(err.Error())
 		err = a.update()
 	}
 	return
 }
 
-func (a *article) insert() (err error) {
-	_, err = db.Exec("INSERT INTO articles (title, body, tags, url) VALUES (?, ?, ?, ?)", a.Title, a.Body, a.TagString, a.Url)
-	return
+func (a *article) insert() error {
+	_, err := db.Exec("INSERT INTO articles (title, body, tags, url) VALUES (?, ?, ?, ?)", a.Title, a.Body, a.TagString, a.Url)
+	return err
 }
 
-func (a *article) update() (err error) {
+func (a *article) update() error {
 	res, err := db.Exec("UPDATE articles SET title = ?, body = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE url = ?", a.Title, a.Body, a.TagString, a.Url)
 	if err != nil {
-		return
-	}
-	if r, _ := res.RowsAffected(); r == 0 {
+		return err
+	} else if r, _ := res.RowsAffected(); r == 0 {
 		err = errors.New("URL cannot be empty")
 	}
-	return
+	return err
 }
 
-func (a *article) delete() (err error) {
-	_, err = db.Exec("DELETE FROM articles WHERE url = ?", a.Url)
-	return
+func (a *article) delete() error {
+	_, err := db.Exec("DELETE FROM articles WHERE url = ?", a.Url)
+	return err
 }
 
 func (a *article) setTags() {
