@@ -13,6 +13,7 @@ import (
 
 var db *sql.DB
 var articles []article
+var templates = template.Must(template.ParseFiles("view.html", "edit.html", "new.html", "search.html"))
 
 type Data struct {
 	Article  *article
@@ -84,6 +85,13 @@ func findArticlesByTag(tag string) ([]article, error) {
 	return articles, nil
 }
 
+func renderTemplate(w http.ResponseWriter, tmpl string, d *Data) {
+	err := templates.ExecuteTemplate(w, tmpl + ".html", d)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func viewHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[1:]
 	if url == "" {
@@ -96,14 +104,19 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	d := Data{Article: &a, Articles: &articles}
-	t, _ := template.ParseFiles("view.html")
-	t.Execute(w, &d)
+	renderTemplate(w, "view", &d)
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
+	/*
 	d := Data{Articles: &articles}
-	t, _ := template.ParseFiles("list.html")
-	t.Execute(w, &d)
+	err := templates.ExecuteTemplate(w, "list.html", &d)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	*/
+	r.URL.Path = "/search/%"
+	searchHandler(w, r)
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request) {
@@ -113,9 +126,8 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	t, _ := template.ParseFiles("edit.html")
 	d := Data{Article: &a, Tags: strings.Join(a.Tags, ",")}
-	t.Execute(w, &d)
+	renderTemplate(w, "edit", &d)
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request) {
@@ -145,9 +157,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	d := Data{Articles: &articles, Article: &article{}}
-	t, _ := template.ParseFiles("search.html")
-	t.Execute(w, &d)
-
+	renderTemplate(w, "search", &d)
 }
 
 func newHandler(w http.ResponseWriter, r *http.Request) {
@@ -156,8 +166,8 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 		saveHandler(w, r)
 		return
 	}
-	t, _ := template.ParseFiles("new.html")
-	t.Execute(w, &article{})
+	d := Data{}
+	renderTemplate(w, "new", &d)
 }
 
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
@@ -187,10 +197,12 @@ func main() {
 	}
 	defer db.Close()
 
-		_, err = db.Exec("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, title TEXT UNIQUE, body TEXT, tags TEXT, url TEXT UNIQUE CHECK(url != ''), created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
-		if err != nil {
-			log.Fatal(err)
-		}
+	/*
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, title TEXT UNIQUE, body TEXT, tags TEXT, url TEXT UNIQUE CHECK(url != ''), created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	*/
 
 	reloadAllArticles()
 
