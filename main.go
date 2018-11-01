@@ -28,11 +28,12 @@ type article struct {
 	Created_at, Updated_at      time.Time
 }
 
-func (a *article) save() (err error) {
-	if err = a.insert(); err != nil {
+func (a *article) save() error {
+	err := a.insert()
+	if err != nil {
 		err = a.update()
 	}
-	return
+	return err
 }
 
 func (a *article) insert() error {
