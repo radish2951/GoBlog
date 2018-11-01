@@ -118,17 +118,13 @@ func renderTemplate(w http.ResponseWriter, tmpl string, d *Data) {
 func viewHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[1:]
 	if url == "" {
-		listHandler(w, r)
+		r.URL.Path = "/search/%"
+		searchHandler(w, r)
 		return
 	}
 	a := mustFindArticleByUrl(w, url)
 	d := Data{Article: &a, Articles: &articles}
 	renderTemplate(w, "view", &d)
-}
-
-func listHandler(w http.ResponseWriter, r *http.Request) {
-	r.URL.Path = "/search/%"
-	searchHandler(w, r)
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request) {
