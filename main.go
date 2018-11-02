@@ -31,7 +31,9 @@ type article struct {
 func (a *article) save() error {
 	err := a.insert()
 	if err != nil {
-		err = a.update()
+		if strings.Contains(err.Error(), "UNIQUE") {
+			err = a.update()
+		}
 	}
 	return err
 }
@@ -90,22 +92,22 @@ func findArticlesByTag(tag string) ([]article, error) {
 	return articles, nil
 }
 
-func mustFindArticleByUrl(w http.ResponseWriter, url string) article {
+func mustFindArticleByUrl(w http.ResponseWriter, url string) (article, error) {
 	a, err := findArticleByUrl(url)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
-		return article{}
+		return article{}, err
 	}
-	return a
+	return a, nil
 }
 
-func mustFindArticlesByTag(w http.ResponseWriter, tag string) []article {
+func mustFindArticlesByTag(w http.ResponseWriter, tag string) ([]article, error) {
 	articles, err := findArticlesByTag(tag)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
-		return []article{}
+		return []article{}, err
 	}
-	return articles
+	return articles, nil
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, d *Data) {
@@ -122,14 +124,20 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 		searchHandler(w, r)
 		return
 	}
-	a := mustFindArticleByUrl(w, url)
+	a, err := mustFindArticleByUrl(w, url)
+	if err != nil {
+		return
+	}
 	d := Data{Article: &a, Articles: &articles}
 	renderTemplate(w, "view", &d)
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[len("/edit/"):]
-	a := mustFindArticleByUrl(w, url)
+	a, err := mustFindArticleByUrl(w, url)
+	if err != nil {
+		return
+	}
 	d := Data{Article: &a}
 	renderTemplate(w, "edit", &d)
 }
@@ -153,7 +161,10 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 
 func searchHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[len("/search/"):]
-	articles := mustFindArticlesByTag(w, url)
+	articles, err := mustFindArticlesByTag(w, url)
+	if err != nil {
+		return
+	}
 	d := Data{Articles: &articles}
 	renderTemplate(w, "search", &d)
 }
@@ -169,7 +180,10 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[len("/delete/"):]
-	a := mustFindArticleByUrl(w, url)
+	a, err := mustFindArticleByUrl(w, url)
+	if err != nil {
+		return
+	}
 	a.delete()
 	reloadAllArticles()
 	http.Redirect(w, r, "/", http.StatusFound)
