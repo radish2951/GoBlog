@@ -8,13 +8,18 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"crypto/rand"
+	"encoding/base64"
+	"golang.org/x/crypto/bcrypt"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
 var articles []article
-var templates = template.Must(template.ParseFiles("view.html", "edit.html", "new.html", "search.html"))
+var templates = template.Must(template.ParseFiles("view.html", "edit.html", "new.html", "search.html", "login.html"))
+var authenticated bool
+var sessionHash []byte
 
 type Data struct {
 	Article  *article
@@ -27,6 +32,8 @@ type article struct {
 	Tags                        []string
 	Created_at, Updated_at      time.Time
 }
+
+/* Methods for type article */
 
 func (a *article) save() error {
 	err := a.insert()
@@ -117,6 +124,24 @@ func renderTemplate(w http.ResponseWriter, tmpl string, d *Data) {
 	}
 }
 
+func auth(name, password string) bool {
+	hash := "$2a$10$KiYM4MujS7uoq8cwoC.CdeuU93DsyWy.mXmv8YDUgYeKbV68Ohh8e"
+	res := bcrypt.CompareHashAndPassword([]byte(hash), []byte(name+password))
+	return res == nil
+}
+
+func generateSessionId(w http.ResponseWriter) {
+	b := make([]byte, 100)
+	rand.Read(b)
+	sessionId := base64.StdEncoding.EncodeToString(b)
+	sessionHash, _ = bcrypt.GenerateFromPassword(sessionId)
+	cookie := http.Cookie{
+		Name: "sessionId",
+		Value: sessionId,
+	}
+	http.SetCookie(w, &cookie)
+}
+
 func viewHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[1:]
 	if url == "" {
@@ -189,6 +214,22 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		name := r.FormValue("name")
+		password := r.FormValue("password")
+		if auth(name, password) {
+			authenticated = true
+			generateSessionId(w)
+			http.Redirect(w, r, "/", http.StatusFound)
+		} else {
+			http.Redirect(w, r, "/login", http.StatusForbidden)
+		}
+	} else if r.Method == "GET" {
+		renderTemplate(w, "login", &Data{})
+	}
+}
+
 func reloadAllArticles() {
 	articles, _ = findArticlesByTag("%")
 }
@@ -211,6 +252,10 @@ func main() {
 		}
 	*/
 
+	b := make([]byte, 100)
+	rand.Read(b)
+	log.Println(base64.StdEncoding.EncodeToString(b))
+
 	reloadAllArticles()
 
 	http.HandleFunc("/", viewHandler)
@@ -219,6 +264,7 @@ func main() {
 	http.HandleFunc("/search/", searchHandler)
 	http.HandleFunc("/new", newHandler)
 	http.HandleFunc("/delete/", deleteHandler)
+	http.HandleFunc("/login", loginHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
