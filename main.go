@@ -3,14 +3,12 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"log"
 	"net/http"
 	"strings"
 	"time"
-	"crypto/rand"
-	"encoding/base64"
-	"golang.org/x/crypto/bcrypt"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -19,7 +17,6 @@ var db *sql.DB
 var articles []article
 var templates = template.Must(template.ParseFiles("view.html", "edit.html", "new.html", "search.html", "login.html"))
 var authenticated bool
-var sessionHash []byte
 
 type Data struct {
 	Article  *article
@@ -130,16 +127,14 @@ func auth(name, password string) bool {
 	return res == nil
 }
 
-func generateSessionId(w http.ResponseWriter) {
-	b := make([]byte, 100)
-	rand.Read(b)
-	sessionId := base64.StdEncoding.EncodeToString(b)
-	sessionHash, _ = bcrypt.GenerateFromPassword(sessionId)
-	cookie := http.Cookie{
-		Name: "sessionId",
-		Value: sessionId,
+func authBeforeHandler(handler func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !authenticated {
+			http.Redirect(w, r, "/", http.StatusFound)
+		} else {
+			handler(w, r)
+		}
 	}
-	http.SetCookie(w, &cookie)
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
@@ -220,14 +215,18 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 		if auth(name, password) {
 			authenticated = true
-			generateSessionId(w)
 			http.Redirect(w, r, "/", http.StatusFound)
 		} else {
-			http.Redirect(w, r, "/login", http.StatusForbidden)
+			http.Redirect(w, r, "/login", http.StatusFound)
 		}
 	} else if r.Method == "GET" {
 		renderTemplate(w, "login", &Data{})
 	}
+}
+
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	authenticated = false
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func reloadAllArticles() {
@@ -252,19 +251,16 @@ func main() {
 		}
 	*/
 
-	b := make([]byte, 100)
-	rand.Read(b)
-	log.Println(base64.StdEncoding.EncodeToString(b))
-
 	reloadAllArticles()
 
 	http.HandleFunc("/", viewHandler)
-	http.HandleFunc("/edit/", editHandler)
-	http.HandleFunc("/save/", saveHandler)
+	http.HandleFunc("/edit/", authBeforeHandler(editHandler))
+	http.HandleFunc("/save/", authBeforeHandler(saveHandler))
 	http.HandleFunc("/search/", searchHandler)
-	http.HandleFunc("/new", newHandler)
-	http.HandleFunc("/delete/", deleteHandler)
+	http.HandleFunc("/new", authBeforeHandler(newHandler))
+	http.HandleFunc("/delete/", authBeforeHandler(deleteHandler))
 	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/logout", logoutHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
