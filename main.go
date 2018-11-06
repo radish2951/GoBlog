@@ -1,5 +1,4 @@
-package main
-
+package main 
 import (
 	"database/sql"
 	"errors"
@@ -123,7 +122,7 @@ func renderTemplate(w http.ResponseWriter, tmpl string, d *Data) {
 }
 
 func auth(name, password string) bool {
-	hash := "$2a$10$KiYM4MujS7uoq8cwoC.CdeuU93DsyWy.mXmv8YDUgYeKbV68Ohh8e"
+	hash := "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
 	res := bcrypt.CompareHashAndPassword([]byte(hash), []byte(name+password))
 	return res == nil
 }
