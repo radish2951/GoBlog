@@ -10,9 +10,11 @@
 {{ end }}
 </p>
 
+{{ if .Authenticated }}
 <p><a href="/edit/{{ .Article.Url }}">Edit</a></p>
 <p><a href="/delete/{{ .Article.Url }}">Delete</a></p>
 <p><a href="/new">New</a></p>
+{{ end }}
 
 {{ range $i, $a := .Articles }}
 <p><a href="/{{ $a.Url }}">{{ $a.Title }}</a></p>

@@ -21,6 +21,7 @@ var authenticated bool
 type Data struct {
 	Article  *article
 	Articles *[]article
+	Authenticated bool
 }
 
 type article struct {
@@ -148,7 +149,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	d := Data{Article: &a, Articles: &articles}
+	d := Data{Article: &a, Articles: &articles, Authenticated: authenticated}
 	renderTemplate(w, "view", &d)
 }
 
