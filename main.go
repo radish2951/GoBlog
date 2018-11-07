@@ -18,6 +18,7 @@ import (
 var db *sql.DB
 var articles []article
 var templates = template.Must(template.ParseFiles("view.html", "edit.html", "new.html", "search.html", "login.html"))
+var hash = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
 var sessionHash []byte
 
 type Data struct {
@@ -32,8 +33,6 @@ type article struct {
 	Tags                        []string
 	Created_at, Updated_at      time.Time
 }
-
-/* Methods for type article */
 
 func (a *article) save() error {
 	err := a.insert()
@@ -125,7 +124,6 @@ func renderTemplate(w http.ResponseWriter, tmpl string, d *Data) {
 }
 
 func auth(name, password string) bool {
-	hash := "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
 	res := bcrypt.CompareHashAndPassword([]byte(hash), []byte(name+password))
 	return res == nil
 }
@@ -260,6 +258,12 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+func handleFuncs(m map[string](http.HandlerFunc)) {
+	for path, handlerFunc := range m {
+		http.HandleFunc(path, handlerFunc)
+	}
+}
+
 func reloadAllArticles() {
 	articles, _ = findArticlesByTag("%")
 }
@@ -279,19 +283,20 @@ func main() {
 		_, err = db.Exec("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, title TEXT UNIQUE CHECK(title != ''), body TEXT CHECK(body != ''), tags TEXT CHECK(tags != ''), url TEXT UNIQUE CHECK(url != ''), created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
 		if err != nil {
 			log.Fatal(err)
-		}
 	*/
 
 	reloadAllArticles()
 
-	http.HandleFunc("/", viewHandler)
-	http.HandleFunc("/edit/", authBeforeHandler(editHandler))
-	http.HandleFunc("/save/", authBeforeHandler(saveHandler))
-	http.HandleFunc("/search/", searchHandler)
-	http.HandleFunc("/new", authBeforeHandler(newHandler))
-	http.HandleFunc("/delete/", authBeforeHandler(deleteHandler))
-	http.HandleFunc("/login", loginHandler)
-	http.HandleFunc("/logout", logoutHandler)
+	handleFuncs(map[string](http.HandlerFunc){
+		"/":        viewHandler,
+		"/edit/":   authBeforeHandler(editHandler),
+		"/save/":   authBeforeHandler(saveHandler),
+		"/search/": searchHandler,
+		"/new":     authBeforeHandler(newHandler),
+		"/delete/": authBeforeHandler(deleteHandler),
+		"/login":   loginHandler,
+		"/logout":  logoutHandler,
+	})
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
