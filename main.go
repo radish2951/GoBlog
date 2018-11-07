@@ -15,15 +15,17 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db *sql.DB
-var articles []article
-var templates = template.Must(template.ParseFiles("view.html", "edit.html", "new.html", "search.html", "login.html"))
-var hash = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
-var sessionHash []byte
+var (
+	db          *sql.DB
+	articles    []*article
+	templates   = template.Must(template.ParseFiles("view.html", "edit.html", "new.html", "search.html", "login.html"))
+	hash        = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
+	sessionHash []byte
+)
 
 type Data struct {
 	Article       *article
-	Articles      *[]article
+	Articles      []*article
 	Authenticated bool
 }
 
@@ -68,50 +70,52 @@ func (a *article) setTags() {
 	a.Tags = strings.Split(a.TagString, ",")
 }
 
-func findArticleByUrl(url string) (a article, err error) {
+func findArticleByUrl(url string) (a *article, err error) {
+	a = &article{}
 	row := db.QueryRow("SELECT * FROM articles WHERE url = ?", url)
 	err = row.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Created_at, &a.Updated_at)
 	a.setTags()
 	return
 }
 
-func findArticlesByTag(tag string) ([]article, error) {
+func findArticlesByTag(tag string) ([]*article, error) {
 	var (
 		a        article
-		articles []article
+		articles []*article
 	)
 	m := []string{tag, "%," + tag + ",%", tag + ",%", "%," + tag}
 	rows, err := db.Query("SELECT * FROM articles WHERE tags LIKE ? OR tags LIKE ? OR tags LIKE ? OR tags LIKE ?", m[0], m[1], m[2], m[3])
 	if err != nil {
-		return []article{}, err
+		return []*article{}, err
 	}
 	for rows.Next() {
 		if err := rows.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Created_at, &a.Updated_at); err != nil {
-			return []article{}, err
+			return []*article{}, err
 		}
 		a.setTags()
-		articles = append(articles, a)
+		ta := a
+		articles = append(articles, &ta)
 	}
 	if err := rows.Err(); err != nil {
-		return []article{}, err
+		return []*article{}, err
 	}
 	return articles, nil
 }
 
-func mustFindArticleByUrl(w http.ResponseWriter, url string) (article, error) {
+func mustFindArticleByUrl(w http.ResponseWriter, url string) (*article, error) {
 	a, err := findArticleByUrl(url)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
-		return article{}, err
+		return &article{}, err
 	}
 	return a, nil
 }
 
-func mustFindArticlesByTag(w http.ResponseWriter, tag string) ([]article, error) {
+func mustFindArticlesByTag(w http.ResponseWriter, tag string) ([]*article, error) {
 	articles, err := findArticlesByTag(tag)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
-		return []article{}, err
+		return []*article{}, err
 	}
 	return articles, nil
 }
@@ -173,7 +177,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	d := Data{Article: &a, Articles: &articles, Authenticated: authenticated(r)}
+	d := Data{Article: a, Articles: articles, Authenticated: authenticated(r)}
 	renderTemplate(w, "view", &d)
 }
 
@@ -183,13 +187,13 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	d := Data{Article: &a}
+	d := Data{Article: a}
 	renderTemplate(w, "edit", &d)
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[len("/save/"):]
-	a := article{
+	a := &article{
 		Title:     r.FormValue("title"),
 		Body:      r.FormValue("body"),
 		Url:       url,
@@ -210,7 +214,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	d := Data{Articles: &articles}
+	d := Data{Articles: articles}
 	renderTemplate(w, "search", &d)
 }
 
