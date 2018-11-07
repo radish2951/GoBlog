@@ -1,6 +1,9 @@
-package main 
+package main
+
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"html/template"
@@ -15,11 +18,11 @@ import (
 var db *sql.DB
 var articles []article
 var templates = template.Must(template.ParseFiles("view.html", "edit.html", "new.html", "search.html", "login.html"))
-var authenticated bool
+var sessionHash []byte
 
 type Data struct {
-	Article  *article
-	Articles *[]article
+	Article       *article
+	Articles      *[]article
 	Authenticated bool
 }
 
@@ -129,12 +132,36 @@ func auth(name, password string) bool {
 
 func authBeforeHandler(handler func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !authenticated {
+		if !authenticated(r) {
 			http.Redirect(w, r, "/", http.StatusFound)
 		} else {
 			handler(w, r)
 		}
 	}
+}
+
+func generateSessionId(w http.ResponseWriter, l int) {
+	b := make([]byte, l)
+	rand.Read(b)
+	sessionId := base64.StdEncoding.EncodeToString(b)
+	sessionHash, _ = bcrypt.GenerateFromPassword([]byte(sessionId), bcrypt.DefaultCost)
+	cookie := http.Cookie{
+		Name:  "sessionId",
+		Value: sessionId,
+	}
+	http.SetCookie(w, &cookie)
+}
+
+func authenticated(r *http.Request) bool {
+	cookie, err := r.Cookie("sessionId")
+	if err != nil {
+		return false
+	} else if cookie.Value == "" {
+		return false
+	}
+	sessionId := cookie.Value
+	err = bcrypt.CompareHashAndPassword(sessionHash, []byte(sessionId))
+	return err == nil
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
@@ -148,7 +175,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	d := Data{Article: &a, Articles: &articles, Authenticated: authenticated}
+	d := Data{Article: &a, Articles: &articles, Authenticated: authenticated(r)}
 	renderTemplate(w, "view", &d)
 }
 
@@ -214,7 +241,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("name")
 		password := r.FormValue("password")
 		if auth(name, password) {
-			authenticated = true
+			generateSessionId(w, 100)
 			http.Redirect(w, r, "/", http.StatusFound)
 		} else {
 			http.Redirect(w, r, "/login", http.StatusFound)
@@ -225,7 +252,11 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
-	authenticated = false
+	cookie := http.Cookie{
+		Name:  "sessionId",
+		Value: "",
+	}
+	http.SetCookie(w, &cookie)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
