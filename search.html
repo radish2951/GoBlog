@@ -1,3 +1,7 @@
+{{ template "header.html" }}
+
 {{ range .Articles }}
 <p><a href="/{{ .Url }}">{{ .Title }}</a></p>
 {{ end }}
+
+{{ template "footer.html" }}

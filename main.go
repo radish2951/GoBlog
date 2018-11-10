@@ -18,7 +18,7 @@ import (
 var (
 	db          *sql.DB
 	articles    []*article
-	templates   = template.Must(template.ParseFiles("view.html", "edit.html", "new.html", "search.html", "login.html"))
+	templates   = template.Must(template.ParseFiles("view.html", "edit.html", "new.html", "search.html", "login.html", "header.html", "footer.html"))
 	hash        = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
 	sessionHash []byte
 )
