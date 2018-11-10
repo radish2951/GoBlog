@@ -132,7 +132,7 @@ func auth(name, password string) bool {
 	return res == nil
 }
 
-func authBeforeHandler(handler func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func authBeforeHandler(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !authenticated(r) {
 			http.Redirect(w, r, "/", http.StatusFound)
