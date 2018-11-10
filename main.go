@@ -262,7 +262,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func handleFuncs(m map[string](http.HandlerFunc)) {
+func handleFunc(m map[string](http.HandlerFunc)) {
 	for path, handlerFunc := range m {
 		http.HandleFunc(path, handlerFunc)
 	}
@@ -291,7 +291,7 @@ func main() {
 
 	reloadAllArticles()
 
-	handleFuncs(map[string](http.HandlerFunc){
+	handleFunc(map[string](http.HandlerFunc){
 		"/":        viewHandler,
 		"/edit/":   authBeforeHandler(editHandler),
 		"/save/":   authBeforeHandler(saveHandler),
