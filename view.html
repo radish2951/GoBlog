@@ -5,8 +5,8 @@
 <p>Updated: {{ .Article.Updated_at }}</p>
 
 <p>
-{{ range $i, $t := .Article.Tags }}
-<a href="/search/{{ $t }}">{{ $t }}</a> 
+{{ range .Article.Tags }}
+<a href="/search/{{ . }}">{{ . }}</a> 
 {{ end }}
 </p>
 
@@ -16,6 +16,6 @@
 <p><a href="/new">New</a></p>
 {{ end }}
 
-{{ range $i, $a := .Articles }}
-<p><a href="/{{ $a.Url }}">{{ $a.Title }}</a></p>
+{{ range .Articles }}
+<p><a href="/{{ .Url }}">{{ .Title }}</a></p>
 {{ end }}
