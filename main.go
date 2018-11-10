@@ -156,9 +156,7 @@ func generateSessionId(w http.ResponseWriter, l int) {
 
 func authenticated(r *http.Request) bool {
 	cookie, err := r.Cookie("sessionId")
-	if err != nil {
-		return false
-	} else if cookie.Value == "" {
+	if err != nil || cookie.Value == "" {
 		return false
 	}
 	sessionId := cookie.Value
