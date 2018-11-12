@@ -12,6 +12,8 @@ import (
 	"strings"
 	t "text/template"
 	"time"
+	"regexp"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -130,11 +132,20 @@ func renderTemplate(w http.ResponseWriter, tmpl string, d *Data) {
 }
 
 func renderHTML(markdown string) string {
+	s := ""
+	re := regexp.MustCompile("#+")
 	lines := strings.Split(markdown, "\n")
-	for i, _ := range lines {
-		lines[i] = "<h1>" + lines[i] + "</h1>"
+	for _, line := range lines {
+		if match := re.FindString(line); match != "" {
+			log.Println(match)
+			l := strconv.Itoa(len(match))
+			s += "<h" + l + ">" + line + "</h" + l + ">"
+		} else {
+			s += line + "<br>"
+		}
+
 	}
-	return strings.Join(lines, "")
+	return s
 }
 
 func auth(name, password string) bool {
