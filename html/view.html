@@ -2,7 +2,9 @@
 
 <h1>{{ .Article.Title }}</h1>
 
-<p>{{ .Article.Body }}</p>
+<div id="article-body">
+{{ .Article.Body }}
+</div>
 <p>Created: {{ .Article.Created_at }}</p>
 <p>Updated: {{ .Article.Updated_at }}</p>
 
@@ -16,10 +18,6 @@
 <p><a href="/edit/{{ .Article.Url }}">Edit</a></p>
 <p><a href="/delete/{{ .Article.Url }}">Delete</a></p>
 <p><a href="/new">New</a></p>
-{{ end }}
-
-{{ range .Articles }}
-<p><a href="/{{ .Url }}">{{ .Title }}</a></p>
 {{ end }}
 
 {{ template "footer.html" }}

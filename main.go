@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	t "text/template"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -19,6 +20,7 @@ var (
 	db          *sql.DB
 	articles    []*article
 	templates   = template.Must(template.ParseFiles("html/view.html", "html/edit.html", "html/new.html", "html/search.html", "html/login.html", "html/header.html", "html/footer.html"))
+	viewTemplate = t.Must(t.ParseFiles("html/view.html", "html/header.html", "html/footer.html"))
 	hash        = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
 	sessionHash []byte
 )
@@ -127,6 +129,14 @@ func renderTemplate(w http.ResponseWriter, tmpl string, d *Data) {
 	}
 }
 
+func renderHTML(markdown string) string {
+	lines := strings.Split(markdown, "\n")
+	for i, _ := range lines {
+		lines[i] = "<h1>" + lines[i] + "</h1>"
+	}
+	return strings.Join(lines, "")
+}
+
 func auth(name, password string) bool {
 	res := bcrypt.CompareHashAndPassword([]byte(hash), []byte(name+password))
 	return res == nil
@@ -175,8 +185,14 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	log.Println(a.Body)
+	a.Body = renderHTML(a.Body)
+	log.Println(a.Body)
 	d := Data{Article: a, Articles: articles, Authenticated: authenticated(r)}
-	renderTemplate(w, "view", &d)
+	err = viewTemplate.ExecuteTemplate(w, "view.html", &d)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request) {
