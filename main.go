@@ -9,22 +9,22 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	t "text/template"
 	"time"
-	"regexp"
-	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
-	db          *sql.DB
-	articles    []*article
-	templates   = template.Must(template.ParseFiles("html/view.html", "html/edit.html", "html/new.html", "html/search.html", "html/login.html", "html/header.html", "html/footer.html"))
+	db           *sql.DB
+	articles     []*article
+	templates    = template.Must(template.ParseFiles("html/view.html", "html/edit.html", "html/new.html", "html/search.html", "html/login.html", "html/header.html", "html/footer.html"))
 	viewTemplate = t.Must(t.ParseFiles("html/view.html", "html/header.html", "html/footer.html"))
-	hash        = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
-	sessionHash []byte
+	hash         = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
+	sessionHash  []byte
 )
 
 type Data struct {
@@ -137,9 +137,9 @@ func renderHTML(markdown string) string {
 	lines := strings.Split(markdown, "\n")
 	for _, line := range lines {
 		if match := re.FindString(line); match != "" {
-			log.Println(match)
+			text := strings.SplitN(line, " ", 2)[1]
 			l := strconv.Itoa(len(match))
-			s += "<h" + l + ">" + line + "</h" + l + ">"
+			s += "<h" + l + ">" + text + "</h" + l + ">"
 		} else {
 			s += line + "<br>"
 		}
@@ -196,10 +196,8 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	log.Println(a.Body)
 	a.Body = renderHTML(a.Body)
-	log.Println(a.Body)
-	d := Data{Article: a, Articles: articles, Authenticated: authenticated(r)}
+	d := Data{Article: a, Authenticated: authenticated(r)}
 	err = viewTemplate.ExecuteTemplate(w, "view.html", &d)
 	if err != nil {
 		log.Fatal(err)
