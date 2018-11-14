@@ -6,13 +6,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
-	"html/template"
 	"log"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
-	t "text/template"
+	"text/template"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -22,7 +21,6 @@ var (
 	db           *sql.DB
 	articles     []*article
 	templates    = template.Must(template.ParseFiles("html/view.html", "html/edit.html", "html/new.html", "html/search.html", "html/login.html", "html/header.html", "html/footer.html"))
-	viewTemplate = t.Must(t.ParseFiles("html/view.html", "html/header.html", "html/footer.html"))
 	hash         = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
 	sessionHash  []byte
 )
@@ -88,7 +86,7 @@ func findArticlesByTag(tag string) ([]*article, error) {
 		articles []*article
 	)
 	m := []string{tag, "%," + tag + ",%", tag + ",%", "%," + tag}
-	rows, err := db.Query("SELECT * FROM articles WHERE tags LIKE ? OR tags LIKE ? OR tags LIKE ? OR tags LIKE ?", m[0], m[1], m[2], m[3])
+	rows, err := db.Query("SELECT * FROM articles WHERE tags LIKE ? OR tags LIKE ? OR tags LIKE ? OR tags LIKE ? ORDER BY id DESC", m[0], m[1], m[2], m[3])
 	if err != nil {
 		return []*article{}, err
 	}
@@ -198,10 +196,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	a.Body = renderHTML(a.Body)
 	d := Data{Article: a, Authenticated: authenticated(r)}
-	err = viewTemplate.ExecuteTemplate(w, "view.html", &d)
-	if err != nil {
-		log.Fatal(err)
-	}
+	renderTemplate(w, "view", &d)
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request) {
