@@ -2,6 +2,7 @@
 
 {{ range .Articles }}
 <p><a href="/{{ .Url }}">{{ .Title }}</a></p>
+<img src="{{ .Thumbnail }}">
 {{ end }}
 
 {{ template "footer.html" }}

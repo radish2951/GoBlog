@@ -1,0 +1,32 @@
+a {
+    text-decoration: none;
+    color: lime;
+}
+
+a:hover {
+    color: orange;
+}
+
+img {
+    width: 300px;
+    height: auto;
+}
+
+h1#sitename {
+    font-size: 12px;
+    text-align: center;
+}
+
+nav#menu {
+    color: yellow;
+}
+
+nav#menu ul {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+}
+
+nav#menu ul li {
+    list-style: none;
+}

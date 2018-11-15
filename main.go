@@ -33,7 +33,7 @@ type Data struct {
 
 type article struct {
 	Id                          int
-	Title, Body, Url, TagString string
+	Title, Body, Url, Thumbnail, TagString string
 	Tags                        []string
 	Created_at, Updated_at      time.Time
 }
@@ -49,12 +49,12 @@ func (a *article) save() error {
 }
 
 func (a *article) insert() error {
-	_, err := db.Exec("INSERT INTO articles (title, body, tags, url) VALUES (?, ?, ?, ?)", a.Title, a.Body, a.TagString, a.Url)
+	_, err := db.Exec("INSERT INTO articles (title, body, tags, url, thumbnail) VALUES (?, ?, ?, ?, ?)", a.Title, a.Body, a.TagString, a.Url, a.Thumbnail)
 	return err
 }
 
 func (a *article) update() error {
-	res, err := db.Exec("UPDATE articles SET title = ?, body = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE url = ?", a.Title, a.Body, a.TagString, a.Url)
+	res, err := db.Exec("UPDATE articles SET title = ?, body = ?, tags = ?, thumbnail = ?, updated_at = CURRENT_TIMESTAMP WHERE url = ?", a.Title, a.Body, a.TagString, a.Thumbnail, a.Url)
 	if err != nil {
 		return err
 	} else if r, _ := res.RowsAffected(); r == 0 {
@@ -75,7 +75,7 @@ func (a *article) setTags() {
 func findArticleByUrl(url string) (a *article, err error) {
 	a = &article{}
 	row := db.QueryRow("SELECT * FROM articles WHERE url = ?", url)
-	err = row.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Created_at, &a.Updated_at)
+	err = row.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Thumbnail, &a.Created_at, &a.Updated_at)
 	a.setTags()
 	return
 }
@@ -85,13 +85,13 @@ func findArticlesByTag(tag string) ([]*article, error) {
 		a        article
 		articles []*article
 	)
-	m := []string{tag, "%," + tag + ",%", tag + ",%", "%," + tag}
+	m := []string{tag, "%,"+tag+",%", tag+",%", "%,"+tag}
 	rows, err := db.Query("SELECT * FROM articles WHERE tags LIKE ? OR tags LIKE ? OR tags LIKE ? OR tags LIKE ? ORDER BY id DESC", m[0], m[1], m[2], m[3])
 	if err != nil {
 		return []*article{}, err
 	}
 	for rows.Next() {
-		if err := rows.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Created_at, &a.Updated_at); err != nil {
+		if err := rows.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Thumbnail, &a.Created_at, &a.Updated_at); err != nil {
 			return []*article{}, err
 		}
 		a.setTags()
@@ -120,6 +120,10 @@ func mustFindArticlesByTag(w http.ResponseWriter, tag string) ([]*article, error
 		return []*article{}, err
 	}
 	return articles, nil
+}
+
+func reloadAllArticles() {
+	articles, _ = findArticlesByTag("%")
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, d *Data) {
@@ -215,6 +219,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 		Title:     r.FormValue("title"),
 		Body:      r.FormValue("body"),
 		Url:       url,
+		Thumbnail: r.FormValue("thumbnail"),
 		TagString: r.FormValue("tags"),
 	}
 	if err := a.save(); err != nil {
@@ -286,10 +291,6 @@ func handleFunc(m map[string](http.HandlerFunc)) {
 	}
 }
 
-func reloadAllArticles() {
-	articles, _ = findArticlesByTag("%")
-}
-
 func main() {
 
 	log.Println("Start")
@@ -301,11 +302,10 @@ func main() {
 	}
 	defer db.Close()
 
-	/*
-		_, err = db.Exec("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, title TEXT UNIQUE CHECK(title != ''), body TEXT CHECK(body != ''), tags TEXT CHECK(tags != ''), url TEXT UNIQUE CHECK(url != ''), created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
-		if err != nil {
-			log.Fatal(err)
-	*/
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, title TEXT UNIQUE CHECK(title != ''), body TEXT CHECK(body != ''), tags TEXT CHECK(tags != ''), url TEXT UNIQUE CHECK(url != ''), thumbnail TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	reloadAllArticles()
 
@@ -319,6 +319,8 @@ func main() {
 		"/login":   loginHandler,
 		"/logout":  logoutHandler,
 	})
+
+	http.Handle("/stylesheet/", http.StripPrefix("/stylesheet/", http.FileServer(http.Dir("stylesheet"))))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
