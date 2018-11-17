@@ -20,7 +20,7 @@ import (
 var (
 	db           *sql.DB
 	articles     []*article
-	templates    = template.Must(template.ParseFiles("html/view.html", "html/edit.html", "html/new.html", "html/search.html", "html/login.html", "html/header.html", "html/footer.html"))
+	templates    = template.Must(template.ParseFiles("html/view.html", "html/edit.html", "html/new.html", "html/tag.html", "html/login.html", "html/header.html", "html/footer.html"))
 	hash         = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
 	sessionHash  []byte
 )
@@ -35,7 +35,7 @@ type article struct {
 	Id                          int
 	Title, Body, Url, Thumbnail, TagString string
 	Tags                        []string
-	Created_at, Updated_at      time.Time
+	CreatedAt, UpdatedAt      time.Time
 }
 
 func (a *article) save() error {
@@ -75,8 +75,10 @@ func (a *article) setTags() {
 func findArticleByUrl(url string) (a *article, err error) {
 	a = &article{}
 	row := db.QueryRow("SELECT * FROM articles WHERE url = ?", url)
-	err = row.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Thumbnail, &a.Created_at, &a.Updated_at)
+	err = row.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Thumbnail, &a.CreatedAt, &a.UpdatedAt)
 	a.setTags()
+	a.CreatedAt = a.CreatedAt.Local()
+	a.UpdatedAt = a.UpdatedAt.Local()
 	return
 }
 
@@ -91,10 +93,12 @@ func findArticlesByTag(tag string) ([]*article, error) {
 		return []*article{}, err
 	}
 	for rows.Next() {
-		if err := rows.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Thumbnail, &a.Created_at, &a.Updated_at); err != nil {
+		if err := rows.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Thumbnail, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return []*article{}, err
 		}
 		a.setTags()
+		a.CreatedAt = a.CreatedAt.Local()
+		a.UpdatedAt = a.UpdatedAt.Local()
 		ta := a
 		articles = append(articles, &ta)
 	}
@@ -190,8 +194,8 @@ func authenticated(r *http.Request) bool {
 func viewHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[1:]
 	if url == "" {
-		r.URL.Path = "/search/%"
-		searchHandler(w, r)
+		r.URL.Path = "/tag/%"
+		tagHandler(w, r)
 		return
 	}
 	a, err := mustFindArticleByUrl(w, url)
@@ -231,14 +235,14 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/"+url, http.StatusFound)
 }
 
-func searchHandler(w http.ResponseWriter, r *http.Request) {
-	url := r.URL.Path[len("/search/"):]
+func tagHandler(w http.ResponseWriter, r *http.Request) {
+	url := r.URL.Path[len("/tag/"):]
 	articles, err := mustFindArticlesByTag(w, url)
 	if err != nil {
 		return
 	}
 	d := Data{Articles: articles}
-	renderTemplate(w, "search", &d)
+	renderTemplate(w, "tag", &d)
 }
 
 func newHandler(w http.ResponseWriter, r *http.Request) {
@@ -313,7 +317,7 @@ func main() {
 		"/":        viewHandler,
 		"/edit/":   authBeforeHandler(editHandler),
 		"/save/":   authBeforeHandler(saveHandler),
-		"/search/": searchHandler,
+		"/tag/": tagHandler,
 		"/new":     authBeforeHandler(newHandler),
 		"/delete/": authBeforeHandler(deleteHandler),
 		"/login":   loginHandler,

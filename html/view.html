@@ -1,20 +1,14 @@
 {{ template "header.html" }}
 
 <h1>{{ .Article.Title }}</h1>
-
 <img src="{{ .Article.Thumbnail }}">
-
 <div id="article-body">
 {{ .Article.Body }}
 </div>
-<p>Created: {{ .Article.Created_at }}</p>
-<p>Updated: {{ .Article.Updated_at }}</p>
+<p>Created: {{ .Article.CreatedAt.Day }} {{ .Article.CreatedAt.Month.String }} {{ .Article.CreatedAt.Year }}</p>
+<p>Updated: {{ .Article.UpdatedAt.Day }} {{ .Article.UpdatedAt.Month.String }} {{ .Article.UpdatedAt.Year }}</p>
 
-<p>
-{{ range .Article.Tags }}
-<a href="/search/{{ . }}">{{ . }}</a> 
-{{ end }}
-</p>
+<p>Tags: {{ range .Article.Tags }}<a href="/tag/{{ . }}">{{ . }}</a> {{ end }}</p>
 
 {{ if .Authenticated }}
 <p><a href="/edit/{{ .Article.Url }}">Edit</a></p>

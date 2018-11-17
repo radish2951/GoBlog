@@ -8,17 +8,16 @@ a:hover {
 }
 
 img {
-    width: 300px;
+    width: 200px;
     height: auto;
 }
 
-h1#sitename {
-    font-size: 12px;
+div#sitename {
+    font-size: 20px;
     text-align: center;
 }
 
 nav#menu {
-    color: yellow;
 }
 
 nav#menu ul {
@@ -29,4 +28,5 @@ nav#menu ul {
 
 nav#menu ul li {
     list-style: none;
+    margin: 0 10px;
 }
