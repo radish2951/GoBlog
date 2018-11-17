@@ -13,6 +13,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"os"
+	"io"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -218,12 +220,29 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request) {
+	file, header, err := r.FormFile("thumbnail")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+	f, err := os.Create("./image/" + header.Filename)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer f.Close()
+	_, err = io.Copy(f, file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	url := r.URL.Path[len("/save/"):]
 	a := &article{
 		Title:     r.FormValue("title"),
 		Body:      r.FormValue("body"),
 		Url:       url,
-		Thumbnail: r.FormValue("thumbnail"),
+		Thumbnail: f.Name(),
 		TagString: r.FormValue("tags"),
 	}
 	if err := a.save(); err != nil {
@@ -325,6 +344,7 @@ func main() {
 	})
 
 	http.Handle("/stylesheet/", http.StripPrefix("/stylesheet/", http.FileServer(http.Dir("stylesheet"))))
+	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("image"))))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
