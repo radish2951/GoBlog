@@ -6,25 +6,25 @@ import (
 	"encoding/base64"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
-	"os"
-	"io"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
-	db           *sql.DB
-	articles     []*article
-	templates    = template.Must(template.ParseFiles("html/view.html", "html/edit.html", "html/new.html", "html/tag.html", "html/login.html", "html/header.html", "html/footer.html"))
-	hash         = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
-	sessionHash  []byte
+	db          *sql.DB
+	articles    []*article
+	templates   = template.Must(template.ParseFiles("html/view.html", "html/edit.html", "html/new.html", "html/tag.html", "html/login.html", "html/header.html", "html/footer.html"))
+	hash        = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
+	sessionHash []byte
 )
 
 type Data struct {
@@ -34,10 +34,10 @@ type Data struct {
 }
 
 type article struct {
-	Id                          int
+	Id                                     int
 	Title, Body, Url, Thumbnail, TagString string
-	Tags                        []string
-	CreatedAt, UpdatedAt      time.Time
+	Tags                                   []string
+	CreatedAt, UpdatedAt                   time.Time
 }
 
 func (a *article) save() error {
@@ -89,7 +89,7 @@ func findArticlesByTag(tag string) ([]*article, error) {
 		a        article
 		articles []*article
 	)
-	m := []string{tag, "%,"+tag+",%", tag+",%", "%,"+tag}
+	m := []string{tag, "%," + tag + ",%", tag + ",%", "%," + tag}
 	rows, err := db.Query("SELECT * FROM articles WHERE tags LIKE ? OR tags LIKE ? OR tags LIKE ? OR tags LIKE ? ORDER BY id DESC", m[0], m[1], m[2], m[3])
 	if err != nil {
 		return []*article{}, err
@@ -220,29 +220,33 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request) {
+	thumbnail := r.FormValue("thumbnail-link")
 	file, header, err := r.FormFile("thumbnail")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer file.Close()
-	f, err := os.Create("./image/" + header.Filename)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer f.Close()
-	_, err = io.Copy(f, file)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if file != nil {
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
+		f, err := os.Create("./image/" + header.Filename)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+		_, err = io.Copy(f, file)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		thumbnail = f.Name()
 	}
 	url := r.URL.Path[len("/save/"):]
 	a := &article{
 		Title:     r.FormValue("title"),
 		Body:      r.FormValue("body"),
 		Url:       url,
-		Thumbnail: f.Name(),
+		Thumbnail: thumbnail,
 		TagString: r.FormValue("tags"),
 	}
 	if err := a.save(); err != nil {
@@ -336,7 +340,7 @@ func main() {
 		"/":        viewHandler,
 		"/edit/":   authBeforeHandler(editHandler),
 		"/save/":   authBeforeHandler(saveHandler),
-		"/tag/": tagHandler,
+		"/tag/":    tagHandler,
 		"/new":     authBeforeHandler(newHandler),
 		"/delete/": authBeforeHandler(deleteHandler),
 		"/login":   loginHandler,

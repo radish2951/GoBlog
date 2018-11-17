@@ -1,10 +1,11 @@
 <h1>Making new article</h1>
 
-<form action="/new" method="POST">
+<form action="/new" enctype="multipart/form-data" method="POST">
 <div>Title:<input name="title"></div>
 <div>Body:<textarea name="body" cols="100" rows="20"></textarea></div>
 <div>Tags:<input name="tags"></div>
 <div>URL:<input name="url"></div>
 <div>Thumbnail:<input name="thumbnail" type="file"></div>
+<div>Thumbnail Link:<input name="thumbnail-link"></div>
 <div><input type="submit" value="Save"></div>
 </form>
