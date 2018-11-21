@@ -239,7 +239,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		thumbnail = f.Name()
+		thumbnail = f.Name()[1:]
 	}
 	url := r.URL.Path[len("/save/"):]
 	a := &article{
@@ -249,6 +249,9 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 		Thumbnail: thumbnail,
 		TagString: r.FormValue("tags"),
 	}
+	
+	log.Println(thumbnail)
+
 	if err := a.save(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
