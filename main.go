@@ -349,6 +349,7 @@ func main() {
 
 	http.Handle("/stylesheet/", http.StripPrefix("/stylesheet/", http.FileServer(http.Dir("stylesheet"))))
 	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("image"))))
+	http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir("js"))))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
