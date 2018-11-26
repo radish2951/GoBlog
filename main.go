@@ -1,4 +1,4 @@
-package main
+package main 
 
 import (
 	"crypto/rand"
@@ -249,9 +249,6 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 		Thumbnail: thumbnail,
 		TagString: r.FormValue("tags"),
 	}
-	
-	log.Println(thumbnail)
-
 	if err := a.save(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

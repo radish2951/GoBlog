@@ -8,8 +8,12 @@ a:hover {
 }
 
 img {
-    width: 200px;
-    height: auto;
+    width: 400px;
+    height: 400px;
+    object-fit: contain;
+    background: white;
+    border: 10px solid black;
+    box-sizing: border-box;
 }
 
 div#sitename {
@@ -29,4 +33,8 @@ nav#menu ul {
 nav#menu ul li {
     list-style: none;
     margin: 0 10px;
+}
+
+div.article h1 {
+    font-size: 20px;
 }
