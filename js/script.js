@@ -22,3 +22,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 });
+
+window.addEventListener('load', () => {
+
+    let x = 0;
+    let y = 0;
+    let lastArticle = '';
+
+    document.addEventListener('mousemove', (e) => {
+        x = e.clientX;
+        y = e.clientY;
+    });
+
+    window.addEventListener('scroll', () => {
+        /*
+        const element = document.elementFromPoint(x, y);
+        const article = element.parentElement.parentElement;
+        if (article.classList.contains('article')) {
+            article.classList.add('hover');
+            lastArticle = article;
+        } else {
+            lastArticle.classList.remove('hover');
+        }
+        */
+        console.log(window.scrollY);
+    });
+});

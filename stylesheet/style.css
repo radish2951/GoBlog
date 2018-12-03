@@ -71,7 +71,6 @@ div#article-wrapper {
 
 article.article {
     width: 360px;
-    /* height: 300px; */
     margin: 120px auto;
     position: relative;
     display: flex;
@@ -92,10 +91,15 @@ article.article a {
 }
 
 article.article a h1 {
+    width: 100%;
+    height: 100%;
     margin: 0;
     text-align: center;
     color: white;
     opacity: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 article.article img {
