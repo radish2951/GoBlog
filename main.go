@@ -10,8 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"regexp"
-	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -139,23 +137,6 @@ func renderTemplate(w http.ResponseWriter, tmpl string, d *Data) {
 	}
 }
 
-func renderHTML(markdown string) string {
-	s := ""
-	re := regexp.MustCompile("#+")
-	lines := strings.Split(markdown, "\n")
-	for _, line := range lines {
-		if match := re.FindString(line); match != "" {
-			text := strings.SplitN(line, " ", 2)[1]
-			l := strconv.Itoa(len(match))
-			s += "<h" + l + ">" + text + "</h" + l + ">"
-		} else {
-			s += line + "<br>"
-		}
-
-	}
-	return s
-}
-
 func auth(name, password string) bool {
 	res := bcrypt.CompareHashAndPassword([]byte(hash), []byte(name+password))
 	return res == nil
@@ -204,7 +185,6 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	a.Body = renderHTML(a.Body)
 	d := Data{Article: a, Authenticated: authenticated(r)}
 	renderTemplate(w, "view", &d)
 }
