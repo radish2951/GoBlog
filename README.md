@@ -5,3 +5,4 @@
 - Responsive design
 - Improve security
 - Improve user experience
+- Add scrolling preview on mobile view
