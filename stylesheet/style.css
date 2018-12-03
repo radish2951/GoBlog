@@ -1,5 +1,11 @@
 body {
     margin: 0;
+    font-family: "Yu Gothic"; 
+    font-weight: lighter;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
 }
 
 a {
@@ -18,20 +24,23 @@ ul, ol, li {
 
 img {
     object-fit: contain;
-    image-orientation: from-image;
 }
 
 header#header {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    height: 70px;
-    padding: 20px;
+    margin-bottom: 80px;
+    padding: 12px 21px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 div#sitename {
-    font-size: 32px;
+    font-size: 26px;
     text-align: center;
+    color: #333;
 }
 
 nav#menu {
@@ -49,17 +58,26 @@ nav#menu ul li {
     font-size: 13px;
 }
 
+nav#menu ul li a {
+    color: #333;
+}
+
+nav#menu ul li a:hover {
+    color: pink;
+}
+
 div#article-wrapper {
 }
 
 article.article {
-    width: 500px;
-    height: 300px;
-    margin: 20px auto;
+    width: 360px;
+    /* height: 300px; */
+    margin: 120px auto;
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
+    box-sizing: border-box;
 }
 
 article.article a {
@@ -71,27 +89,37 @@ article.article a {
     align-items: center;
     z-index: 101;
     background: rgba(0, 0, 0, 0);
-    transition: background 150ms;
-}
-
-article.article a:hover {
-    background: rgba(0, 0, 0, 0.7);
 }
 
 article.article a h1 {
     margin: 0;
     text-align: center;
-    color: pink;
+    color: white;
     opacity: 0;
-    transition: opacity 150ms;
-}
-
-article.article a:hover h1 {
-    opacity: 1;
 }
 
 article.article img {
     width: 100%;
-    height: 100%;
+    /* height: 100%; */
     z-index: 100;
+}
+
+article.article.hover {
+    border: 2px solid white;
+}
+
+article.article.hover a {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+article.article.hover h1 {
+    opacity: 1;
+}
+
+article.article.hover img {
+    opacity: 0;
+}
+
+article.article.hidden {
+    opacity: 0;
 }
