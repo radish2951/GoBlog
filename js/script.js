@@ -10,11 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
         article.addEventListener('mouseenter', () => {
             document.body.style.backgroundImage = 'url(/image/' + url + '.gif)';
             for (let j = 0; j < articles.length; j++) {
-                if (i != j) {
-                    articles[j].classList.toggle('hidden');
-                }
+                articles[j].classList.toggle(i == j ? 'hover' : 'hidden');
             }
-            article.classList.toggle('hover');
         });
 
         article.addEventListener('mouseleave', () => {
