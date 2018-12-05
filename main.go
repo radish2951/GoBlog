@@ -1,4 +1,4 @@
-package main 
+package main
 
 import (
 	"crypto/rand"
@@ -6,10 +6,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
-	"io"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"text/template"
 	"time"
@@ -32,10 +30,10 @@ type Data struct {
 }
 
 type article struct {
-	Id                                     int
-	Title, Body, Url, Thumbnail, TagString string
-	Tags                                   []string
-	CreatedAt, UpdatedAt                   time.Time
+	Id                          int
+	Title, Body, Url, TagString string
+	Tags                        []string
+	CreatedAt, UpdatedAt        time.Time
 }
 
 func (a *article) save() error {
@@ -49,12 +47,12 @@ func (a *article) save() error {
 }
 
 func (a *article) insert() error {
-	_, err := db.Exec("INSERT INTO articles (title, body, tags, url, thumbnail) VALUES (?, ?, ?, ?, ?)", a.Title, a.Body, a.TagString, a.Url, a.Thumbnail)
+	_, err := db.Exec("INSERT INTO articles (title, body, tags, url) VALUES (?, ?, ?, ?)", a.Title, a.Body, a.TagString, a.Url)
 	return err
 }
 
 func (a *article) update() error {
-	res, err := db.Exec("UPDATE articles SET title = ?, body = ?, tags = ?, thumbnail = ?, updated_at = CURRENT_TIMESTAMP WHERE url = ?", a.Title, a.Body, a.TagString, a.Thumbnail, a.Url)
+	res, err := db.Exec("UPDATE articles SET title = ?, body = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE url = ?", a.Title, a.Body, a.TagString, a.Url)
 	if err != nil {
 		return err
 	} else if r, _ := res.RowsAffected(); r == 0 {
@@ -75,7 +73,7 @@ func (a *article) setTags() {
 func findArticleByUrl(url string) (a *article, err error) {
 	a = &article{}
 	row := db.QueryRow("SELECT * FROM articles WHERE url = ?", url)
-	err = row.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Thumbnail, &a.CreatedAt, &a.UpdatedAt)
+	err = row.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.CreatedAt, &a.UpdatedAt)
 	a.setTags()
 	a.CreatedAt = a.CreatedAt.Local()
 	a.UpdatedAt = a.UpdatedAt.Local()
@@ -93,7 +91,7 @@ func findArticlesByTag(tag string) ([]*article, error) {
 		return []*article{}, err
 	}
 	for rows.Next() {
-		if err := rows.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.Thumbnail, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return []*article{}, err
 		}
 		a.setTags()
@@ -200,33 +198,11 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request) {
-	thumbnail := r.FormValue("thumbnail-link")
-	file, header, err := r.FormFile("thumbnail")
-	if file != nil {
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer file.Close()
-		f, err := os.Create("./image/" + header.Filename)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer f.Close()
-		_, err = io.Copy(f, file)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		thumbnail = f.Name()[1:]
-	}
 	url := r.URL.Path[len("/save/"):]
 	a := &article{
 		Title:     r.FormValue("title"),
 		Body:      r.FormValue("body"),
 		Url:       url,
-		Thumbnail: thumbnail,
 		TagString: r.FormValue("tags"),
 	}
 	if err := a.save(); err != nil {
@@ -309,7 +285,7 @@ func main() {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, title TEXT UNIQUE CHECK(title != ''), body TEXT CHECK(body != ''), tags TEXT CHECK(tags != ''), url TEXT UNIQUE CHECK(url != ''), thumbnail TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, title TEXT UNIQUE CHECK(title != ''), body TEXT CHECK(body != ''), tags TEXT CHECK(tags != ''), url TEXT UNIQUE CHECK(url != ''), created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
 	if err != nil {
 		log.Fatal(err)
 	}

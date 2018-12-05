@@ -4,7 +4,7 @@
 {{ range .Articles }}
 <article class="article">
 <a href="/{{ .Url }}"><h1>{{ .Title }}</h1></a>
-<img src="{{ .Thumbnail }}">
+<img src="/image/{{ .Url }}.jpg">
 </article>
 {{ end }}
 </div>

@@ -1,10 +1,8 @@
 <h1>{{ .Article.Title }}</h1>
 
-<form action="/save/{{ .Article.Url }}" enctype="multipart/form-data" method="POST">
+<form action="/save/{{ .Article.Url }}" method="POST">
 <div><input name="title" value="{{ .Article.Title }}"></div>
 <div><textarea name="body" cols="100" rows="20">{{ .Article.Body }}</textarea></div>
 <div><input name="tags" value="{{ .Article.TagString }}"></div>
-<div><input name="thumbnail" type="file"></div>
-<div><input name="thumbnail-link" value="{{ .Article.Thumbnail }}"></div>
 <div><input type="submit" value="Save"></div>
 </form>
