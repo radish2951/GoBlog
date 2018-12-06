@@ -1,12 +1,17 @@
-{{ template "header.html" }}
+{{- template "header.html" -}}
 
-<div id="article-wrapper">
+<main>
 {{ range .Articles }}
-<article class="article">
-<a href="/{{ .Url }}"><h1>{{ .Title }}</h1></a>
+<article id="{{ .Url }}">
+    <a href="/{{ .Url }}">
+        <div>
+            <p class="title">{{ .Title }}</p>
+            <p class="data">{{ index .Tags 0 }}, {{ .CreatedAt.Year }}</p>
+        </div>
+    </a>
 <img src="/image/{{ .Url }}.jpg">
 </article>
 {{ end }}
-</div>
+</main>
 
-{{ template "footer.html" }}
+{{- template "footer.html" -}}

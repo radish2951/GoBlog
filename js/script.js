@@ -1,6 +1,6 @@
 window.addEventListener('load', () => {
 
-    const articles = document.getElementsByClassName('article');
+    const articles = document.getElementsByTagName('article');
     const articleArray = Array.from(articles);
 
     let x = 0;
@@ -8,7 +8,7 @@ window.addEventListener('load', () => {
 
     for (let i = 0; i < articles.length; i++) {
 
-        const url = articles[i].getElementsByTagName('a')[0].href.split('/')[3];
+        const url = articles[i].id;
 
         articles[i].addEventListener('mouseenter', () => {
             document.body.style.backgroundImage = 'url(/image/' + url + '.gif)';
@@ -33,6 +33,7 @@ window.addEventListener('load', () => {
 
     });
 
+    /*
     window.addEventListener('scroll', () => {
 
         const element = document.elementFromPoint(x, y);
@@ -40,7 +41,7 @@ window.addEventListener('load', () => {
         const index = articleArray.indexOf(article);
 
         if (index + 1) {
-            const url = article.getElementsByTagName('a')[0].href.split('/')[3];
+            const url = article.id;
             document.body.style.backgroundImage = 'url(/image/' + url + '.gif)';
             for (let i = 0; i < articles.length; i++) {
                 articles[i].classList.add(i == index ? 'hover' : 'hidden');
@@ -53,5 +54,6 @@ window.addEventListener('load', () => {
         }
 
     });
+    */
 
 });
