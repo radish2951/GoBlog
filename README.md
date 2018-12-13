@@ -7,3 +7,4 @@
 - Improve user experience
 - Add scrolling preview on mobile view
 - Implement ordering method
+- Add single page design

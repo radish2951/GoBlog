@@ -11,6 +11,7 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"io/ioutil"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -268,6 +269,16 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	files, err := ioutil.ReadDir("image")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, file := range files {
+		w.Write([]byte("<img src=\"/image/" + file.Name() + "\">"))
+	}
+}
+
 func handleFunc(m map[string](http.HandlerFunc)) {
 	for path, handlerFunc := range m {
 		http.HandleFunc(path, handlerFunc)
@@ -301,6 +312,7 @@ func main() {
 		"/delete/": authBeforeHandler(deleteHandler),
 		"/login":   loginHandler,
 		"/logout":  logoutHandler,
+		"/upload":  uploadHandler,
 	})
 
 	http.Handle("/stylesheet/", http.StripPrefix("/stylesheet/", http.FileServer(http.Dir("stylesheet"))))
