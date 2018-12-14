@@ -19,7 +19,7 @@ import (
 var (
 	db          *sql.DB
 	articles    []*article
-	templates   = template.Must(template.ParseFiles("html/view.html", "html/edit.html", "html/new.html", "html/tag.html", "html/login.html", "html/header.html", "html/footer.html"))
+	templates   = template.Must(template.ParseFiles("html/view.html", "html/edit.html", "html/new.html", "html/tag.html", "html/login.html", "html/header.html", "html/footer.html", "html/upload.html"))
 	hash        = "$2a$10$bOcu63.qsVSgzAB0UWC3G.4qNYHyfFm4ZsuigwTq4m7Q9DSrUtUmC"
 	sessionHash []byte
 )
@@ -274,8 +274,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, file := range files {
-		w.Write([]byte("<img src=\"/image/" + file.Name() + "\">"))
+	log.Println(files)
+	if r.Method == "GET" {
+		renderTemplate(w, "upload", &Data{})
 	}
 }
 

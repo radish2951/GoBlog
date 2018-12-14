@@ -1,0 +1,61 @@
+<div id="form-wrapper">
+<form action="/upload" method="POST" enctype="multipart/form-data">
+    <input type="file" name="image" accept="image/*" multiple >
+    <input type="submit" value="Upload">
+</form>
+</div>
+<style>
+#form-wrapper img {
+    width: 200px;
+    height: auto;
+}
+</style>
+<script>
+const input = document.getElementsByTagName('input')[0];
+const formWrapper = document.getElementById('form-wrapper');
+const dropbox = document.body;
+
+const handleFiles = files => {
+    for (const file of files) {
+        const reader = new FileReader();
+        const img = document.createElement('img');
+        img.alt = 'Loading...';
+        formWrapper.appendChild(img);
+        reader.addEventListener('load', e => {
+            const file = e.target.result;
+            img.src = file;
+        });
+        reader.readAsDataURL(file);
+    }
+};
+
+const removeOldImgs = () => {
+    while (formWrapper.lastChild.tagName && formWrapper.lastChild.tagName.toLowerCase() == 'img') {
+        formWrapper.removeChild(formWrapper.lastChild);
+    }
+}
+
+
+input.addEventListener('change', e => {
+    removeOldImgs();
+    const files = e.target.files;
+    handleFiles(files);
+});
+dropbox.addEventListener('dragenter', e => {
+    e.stopPropagation();
+    e.preventDefault();
+});
+dropbox.addEventListener('dragover', e => {
+    e.stopPropagation();
+    e.preventDefault();
+});
+dropbox.addEventListener('drop', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    const data = e.dataTransfer;
+    const files = data.files;
+    removeOldImgs();
+    handleFiles(files);
+    input.files = files;
+});
+</script>
