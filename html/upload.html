@@ -18,19 +18,24 @@ const dropbox = document.body;
 const handleFiles = files => {
     for (const file of files) {
         const reader = new FileReader();
+        const div = document.createElement('div');
         const img = document.createElement('img');
+        const p   = document.createElement('p');
+        div.classList.add('preview');
         img.alt = 'Loading...';
-        formWrapper.appendChild(img);
+        p.innerText = file.name;
+        formWrapper.appendChild(div);
+        div.appendChild(img);
+        div.appendChild(p);
         reader.addEventListener('load', e => {
-            const file = e.target.result;
-            img.src = file;
+            img.src = e.target.result;
         });
         reader.readAsDataURL(file);
     }
 };
 
 const removeOldImgs = () => {
-    while (formWrapper.lastChild.tagName && formWrapper.lastChild.tagName.toLowerCase() == 'img') {
+    while (formWrapper.lastChild.classList && formWrapper.lastChild.classList.contains('preview')) {
         formWrapper.removeChild(formWrapper.lastChild);
     }
 }

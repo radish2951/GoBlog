@@ -6,12 +6,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 	"text/template"
 	"time"
-	"io/ioutil"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -33,7 +33,6 @@ type Data struct {
 type article struct {
 	Id                          int
 	Title, Body, Url, TagString string
-	Tags                        []string
 	CreatedAt, UpdatedAt        time.Time
 }
 
@@ -67,15 +66,14 @@ func (a *article) delete() error {
 	return err
 }
 
-func (a *article) setTags() {
-	a.Tags = strings.Split(a.TagString, ",")
+func (a *article) Tags() []string {
+	return strings.Split(a.TagString, ",")
 }
 
 func findArticleByUrl(url string) (a *article, err error) {
 	a = &article{}
 	row := db.QueryRow("SELECT * FROM articles WHERE url = ?", url)
 	err = row.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.CreatedAt, &a.UpdatedAt)
-	a.setTags()
 	a.CreatedAt = a.CreatedAt.Local()
 	a.UpdatedAt = a.UpdatedAt.Local()
 	return
@@ -95,7 +93,6 @@ func findArticlesByTag(tag string) ([]*article, error) {
 		if err := rows.Scan(&a.Id, &a.Title, &a.Body, &a.TagString, &a.Url, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return []*article{}, err
 		}
-		a.setTags()
 		a.CreatedAt = a.CreatedAt.Local()
 		a.UpdatedAt = a.UpdatedAt.Local()
 		ta := a
@@ -210,7 +207,6 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.setTags()
 	reloadAllArticles()
 	http.Redirect(w, r, "/"+url, http.StatusFound)
 }
@@ -274,9 +270,14 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(files)
 	if r.Method == "GET" {
+		for _, file := range files {
+			log.Println(file.Name())
+		}
 		renderTemplate(w, "upload", &Data{})
+	}
+	if r.Method == "POST" {
+		http.Redirect(w, r, "/upload", http.StatusFound)
 	}
 }
 
@@ -297,10 +298,12 @@ func main() {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, title TEXT UNIQUE CHECK(title != ''), body TEXT CHECK(body != ''), tags TEXT CHECK(tags != ''), url TEXT UNIQUE CHECK(url != ''), created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
-	if err != nil {
-		log.Fatal(err)
-	}
+	/*
+		_, err = db.Exec("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, title TEXT UNIQUE CHECK(title != ''), body TEXT CHECK(body != ''), tags TEXT CHECK(tags != ''), url TEXT UNIQUE CHECK(url != ''), created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
+		if err != nil {
+			log.Fatal(err)
+		}
+	*/
 
 	reloadAllArticles()
 
