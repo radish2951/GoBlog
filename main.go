@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -68,6 +69,17 @@ func (a *article) delete() error {
 
 func (a *article) Tags() []string {
 	return strings.Split(a.TagString, ",")
+}
+
+func (a *article) Images() []string {
+	body := a.Body
+	re := regexp.MustCompile("<img .*src=\"(.+?)\".*>")
+	matches := re.FindAllStringSubmatch(body, -1)
+	images := []string{}
+	for _, match := range matches {
+		images = append(images, match[1])
+	}
+	return images
 }
 
 func findArticleByUrl(url string) (a *article, err error) {
@@ -181,6 +193,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	log.Println(a.Images())
 	d := Data{Article: a, Authenticated: authenticated(r)}
 	renderTemplate(w, "view", &d)
 }
@@ -274,7 +287,13 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		for _, file := range files {
 			log.Println(file.Name())
 		}
-		renderTemplate(w, "upload", &Data{})
+		// renderTemplate(w, "upload", &Data{})
+		response := "<div>"
+		for _, file := range files {
+			response += "<img src=\"/image/" + file.Name() + "\">"
+		}
+		response += "</div>"
+		w.Write([]byte(response))
 	}
 	if r.Method == "POST" {
 		http.Redirect(w, r, "/upload", http.StatusFound)
