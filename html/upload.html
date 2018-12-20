@@ -4,6 +4,11 @@
     <input type="submit" value="Upload">
 </form>
 </div>
+<div id="images">
+    {{ range .Images }}
+    <img src="/image/{{ . }}">
+    {{ end }}
+</div>
 <style>
 #form-wrapper img {
     width: 200px;

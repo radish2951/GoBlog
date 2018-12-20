@@ -29,6 +29,7 @@ type Data struct {
 	Article       *article
 	Articles      []*article
 	Authenticated bool
+	Images	[]string
 }
 
 type article struct {
@@ -138,7 +139,7 @@ func reloadAllArticles() {
 	articles, _ = findArticlesByTag("%")
 }
 
-func renderTemplate(w http.ResponseWriter, tmpl string, d *Data) {
+func renderTemplate(w http.ResponseWriter, tmpl string, d interface{}) {
 	err := templates.ExecuteTemplate(w, tmpl+".html", d)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -279,21 +280,17 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	files, err := ioutil.ReadDir("image")
-	if err != nil {
-		log.Fatal(err)
-	}
 	if r.Method == "GET" {
-		for _, file := range files {
-			log.Println(file.Name())
+		files, err := ioutil.ReadDir("image")
+		if err != nil {
+			log.Fatal(err)
 		}
-		// renderTemplate(w, "upload", &Data{})
-		response := "<div>"
+		images := []string{}
 		for _, file := range files {
-			response += "<img src=\"/image/" + file.Name() + "\">"
+			images = append(images, file.Name())
 		}
-		response += "</div>"
-		w.Write([]byte(response))
+		d := Data{Images: images}
+		renderTemplate(w, "upload", &d)
 	}
 	if r.Method == "POST" {
 		http.Redirect(w, r, "/upload", http.StatusFound)
