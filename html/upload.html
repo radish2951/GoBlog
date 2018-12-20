@@ -6,7 +6,10 @@
 </div>
 <div id="images">
     {{ range .Images }}
-    <img src="/image/{{ . }}">
+    <div>
+        <img src="/image/{{ . }}">
+        <p>{{ . }}</p>
+    </div>
     {{ end }}
 </div>
 <style>
